@@ -59,7 +59,7 @@ def handle_out_of_retries(retry_state: tenacity.RetryCallState):
             continue
         predicted_order.append(index)
         predicted_set.add(index)
-    missing_indices = predicted_set - correct_order_set
+    missing_indices = correct_order_set - predicted_set
     if missing_indices:
         predicted_order.extend(list(missing_indices))
 
