@@ -128,7 +128,7 @@ async def _run_reorder_task(
         model_name=model_name,
     )
     predicted_order = [
-        int(num.strip().replace(".", "")) - 1
+        int(num.replace(".", "").replace(" ", "").replace("*", "").strip()) - 1
         for num in response.split(":")[-1].strip().split(",")
     ]
     context.predicted_order = predicted_order
