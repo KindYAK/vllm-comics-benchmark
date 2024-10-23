@@ -12,10 +12,8 @@ def log_before_sleep(retry_state):
 
 
 @tenacity.retry(
-    # wait=tenacity.wait_fixed(30) + tenacity.wait_exponential(multiplier=1, min=30, max=60),
-    # stop=tenacity.stop_after_attempt(10),
-    wait=tenacity.wait_fixed(1),
-    stop=tenacity.stop_after_attempt(1),
+    wait=tenacity.wait_fixed(1) + tenacity.wait_exponential(multiplier=1, min=1, max=60),
+    stop=tenacity.stop_after_attempt(10),
     retry=tenacity.retry_if_exception_type(Exception),
     before_sleep=log_before_sleep
 )
