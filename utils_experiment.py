@@ -35,23 +35,78 @@ class ReorderResultDict(TypedDict):
     correct_order: list[int]
     predicted_order: list[int]
     reasoning: str
+    failed: bool
 
 
-@tenacity.retry(
-    # wait=tenacity.wait_fixed(30) + tenacity.wait_exponential(multiplier=1, min=30, max=60),
-    # stop=tenacity.stop_after_attempt(10),
-    wait=tenacity.wait_fixed(1),
-    stop=tenacity.stop_after_attempt(5),
-    retry=tenacity.retry_if_exception_type(Exception),
-    before_sleep=log_before_sleep
-)
+class ReorderTaskContext:
+    def __init__(self, len_imgs: int):
+        self.imgs: list[str] = []
+        self.correct_order: list[int | None] = [None] * len_imgs
+        self.predicted_order: list[int] = []
+        self.panels_path: str = ""
+
+
+def handle_out_of_retries(retry_state: tenacity.RetryCallState):
+    kwargs = retry_state.kwargs
+    context = kwargs.get('context')
+    imgs = context.imgs
+    correct_order_set = set(context.correct_order)
+
+    predicted_order = []
+    predicted_set = set()
+    for index in context.predicted_order:
+        if index in predicted_set:
+            continue
+        predicted_order.append(index)
+        predicted_set.add(index)
+    missing_indices = predicted_set - correct_order_set
+    if missing_indices:
+        predicted_order.extend(list(missing_indices))
+
+    reasoning = "Default reasoning due to retries exhausted."
+    return {
+        "panels_path": context.panels_path,
+        "imgs_original": imgs,
+        "imgs_predicted": [imgs[i] for i in predicted_order],
+        "correct_order": context.correct_order,
+        "predicted_order": predicted_order,
+        "reasoning": reasoning,
+        "failed": True,
+    }
+
+
 async def run_reorder_task(
     client: AsyncOpenAI,
     panels_path: str,
     random_seed: int = 42,
     model_name: str = "gpt-4o-mini",
 ) -> ReorderResultDict:
+    return await _run_reorder_task(
+        client,
+        panels_path,
+        random_seed=random_seed,
+        model_name=model_name,
+        context=ReorderTaskContext(len(os.listdir(panels_path))),
+    )
+
+
+@tenacity.retry(
+    wait=tenacity.wait_fixed(1),
+    stop=tenacity.stop_after_attempt(5),
+    retry=tenacity.retry_if_exception_type(Exception),
+    before_sleep=log_before_sleep,
+    retry_error_callback=handle_out_of_retries,
+)
+async def _run_reorder_task(
+    client: AsyncOpenAI,
+    panels_path: str,
+    context: ReorderTaskContext,
+    random_seed: int = 42,
+    model_name: str = "gpt-4o-mini",
+) -> ReorderResultDict:
     imgs = os.listdir(panels_path)
+    context.imgs = imgs
+    context.panels_path = panels_path
     random.seed(random_seed)
     random.shuffle(imgs)
     correct_order: list[int | None] = [None] * len(imgs)
@@ -60,6 +115,7 @@ async def run_reorder_task(
             img.split(".")[0].replace("panel_", "")
         )
         correct_order[actual_index] = shuffled_index
+        context.correct_order[actual_index] = shuffled_index
 
     response = await call_gpt4(
         client,
@@ -73,6 +129,8 @@ async def run_reorder_task(
         int(num.strip().replace(".", "")) - 1
         for num in response.split(":")[-1].strip().split(",")
     ]
+    context.predicted_order = predicted_order
+
     assert len(predicted_order) == len(imgs), "Incorrect number of panels in the response"
     reasoning = "\n".join(
         response.split(":")[:-1]
@@ -83,5 +141,6 @@ async def run_reorder_task(
         "imgs_predicted": [imgs[i] for i in predicted_order],
         "correct_order": cast(list[int], correct_order),
         "predicted_order": predicted_order,
-        "reasoning": reasoning
+        "reasoning": reasoning,
+        "failed": False,
     }
