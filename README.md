@@ -28,6 +28,14 @@ poetry install
 ## Metrics
 We use an average of the **Longest Common Subsequence (LCS) Length** and the **Bubble Sort Distance** to evaluate model performance. The LCS metric is effective for assessing how well an LLM can identify large correct chunks of the plot, especially in comics with many panels. It focuses on the longest sequence of panels that are correctly ordered. On the other hand, the Bubble Sort Distance measures the minimal number of adjacent swaps needed to correct the model's panel sequence, which is better for evaluating smaller misplacements and overall sequence similarity.
 
+### Results
+| Model       | XKCD loss | Average |
+|-------------|-----------|---------|
+| GPT-4o-mini | 0.57      | 0.57    |
+| GPT-4o      |           |         |
+| **Average** |           |         |
+*More comics and models coming soon!*
+
 
 # Data
 Currently, we are using comics from :
