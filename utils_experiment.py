@@ -94,7 +94,7 @@ async def run_reorder_task(
 
 @tenacity.retry(
     wait=tenacity.wait_fixed(1),
-    stop=tenacity.stop_after_attempt(1), # TODO TEMP -> 5
+    stop=tenacity.stop_after_attempt(3),
     retry=tenacity.retry_if_exception_type(Exception),
     before_sleep=log_before_sleep,
     retry_error_callback=handle_out_of_retries,
