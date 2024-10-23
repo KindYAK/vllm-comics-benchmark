@@ -57,6 +57,8 @@ def handle_out_of_retries(retry_state: tenacity.RetryCallState):
     for index in context.predicted_order:
         if index in predicted_set:
             continue
+        if index not in correct_order_set:
+            continue
         predicted_order.append(index)
         predicted_set.add(index)
     missing_indices = correct_order_set - predicted_set
@@ -92,7 +94,7 @@ async def run_reorder_task(
 
 @tenacity.retry(
     wait=tenacity.wait_fixed(1),
-    stop=tenacity.stop_after_attempt(5),
+    stop=tenacity.stop_after_attempt(1),  # TODO 5
     retry=tenacity.retry_if_exception_type(Exception),
     before_sleep=log_before_sleep,
     retry_error_callback=handle_out_of_retries,
