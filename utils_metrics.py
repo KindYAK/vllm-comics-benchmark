@@ -66,7 +66,7 @@ def combined_normalized_loss(true_order, classified_order, alpha=0.5):
 
     # Calculate LCS
     lcs_len = lcs_length(true_order, classified_order)
-    lcs_loss = 1 - (lcs_len / n)
+    lcs_loss = (n - lcs_len) / (n - 1)  # Normalize LCS loss to [0, 1]
 
     # Calculate BSD
     bsd = bubble_sort_distance(true_order, classified_order)
