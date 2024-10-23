@@ -26,15 +26,46 @@ poetry install
 
 
 ## Metrics
-We use an average of the **Longest Common Subsequence (LCS) Length** and the **Bubble Sort Distance** to evaluate model performance. The LCS metric is effective for assessing how well an LLM can identify large correct chunks of the plot, especially in comics with many panels. It focuses on the longest sequence of panels that are correctly ordered. On the other hand, the Bubble Sort Distance measures the minimal number of adjacent swaps needed to correct the model's panel sequence, which is better for evaluating smaller misplacements and overall sequence similarity.
+We use an average of the **Longest Common Subsequence (LCS) Length** and the **Bubble Sort Distance** to evaluate model performance. The LCS metric is effective for assessing how well an LLM can identify large correct chunks of the plot, especially in comics with many panels. It focuses on the longest sequence of panels that are correctly ordered. On the other hand, the Bubble Sort Distance measures the minimal number of adjacent swaps needed to correct the model's panel sequence, which is better for evaluating smaller misplacements and overall sequence similarity. Also, random baseline for this approach is ~0.5, which makes the proposed metric more interpretable.
 
 ### Results
-| Model       | XKCD loss | Average |
-|-------------|-----------|---------|
-| GPT-4o-mini | 0.57      | 0.57    |
-| GPT-4o      |           |         |
-| **Average** |           |         |
+| Model             | XKCD loss | Average |
+|-------------------|-----------|---------|
+| Random (baseline) | 0.52      | 0.52    |
+| GPT-4o-mini       | 0.57      | 0.57    |
+| GPT-4o            | 0.41      | 0.41    |
+| **Average**       |           |         |
 *More comics and models coming soon!*
+
+## Results Format
+
+The evaluation results are stored in JSON files, one for each model (e.g., `results-xkcd-gpt-4o.json`, `results-xkcd-gpt-4o-mini.json`). Each JSON file contains a list of dictionaries, where each dictionary corresponds to a single comic evaluation.
+
+### Example Entry
+
+```json
+[
+  {
+    "panels_path": "data/xkcd/736-Cemetery.jpg",
+    "imgs_original": ["panel_1.jpg", "panel_0.jpg"],
+    "imgs_predicted": ["panel_1.jpg", "panel_0.jpg"],
+    "correct_order": [1, 0],
+    "predicted_order": [0, 1],
+    "reasoning": "...",
+    "failed": false
+  },
+  ...
+]
+```
+### Field Descriptions
+
+- panels_path: The file path to the original comic image.
+- imgs_original: A list of filenames for the extracted comic panels in their original (correct) order.
+- imgs_predicted: A list of filenames for the panels as predicted by the model.
+- correct_order: A list of indices representing the correct order of the panels.
+- predicted_order: A list of indices representing the panel order as predicted by the model.
+- reasoning: The model's reasoning or explanation for the predicted panel order.
+- failed: A boolean indicating whether the model failed to output the correct indices after multiple attempts (e.g., 5 retries). If true, the predicted_order is automatically corrected.
 
 
 # Data
