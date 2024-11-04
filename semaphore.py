@@ -1,6 +1,6 @@
 import asyncio
 
-SEMAPHORES = {}
+SEMAPHORES = dict()
 
 
 def set_semaphore(key, value):
